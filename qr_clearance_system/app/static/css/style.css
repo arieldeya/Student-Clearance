@@ -1,0 +1,4 @@
+body { background: #f5f7fb; }
+.auth-card { max-width: 460px; margin-top: 2rem; border: 0; border-radius: 12px; }
+.card { border: 0; border-radius: 12px; }
+.navbar-brand { letter-spacing: .3px; }

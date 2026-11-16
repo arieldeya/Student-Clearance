@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+
+{% block title %}
+Department Officer Dashboard | UniClear
+{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <!-- Dashboard Heading -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+            <h1 class="h3">Department Officer Dashboard</h1>
+
+            <p class="text-muted mb-0">
+                Welcome, {{ current_user.full_name }}
+            </p>
+        </div>
+
+        <span class="badge bg-primary fs-6">
+            Department Officer
+        </span>
+
+    </div>
+
+
+    <!-- Department Information -->
+    <div class="card shadow-sm mb-4">
+
+        <div class="card-body">
+
+            <h5 class="card-title">
+                Assigned Department
+            </h5>
+
+            <h4 class="text-primary">
+
+                {% if current_user.department %}
+                    {{ current_user.department.name }}
+                {% else %}
+                    Not Assigned
+                {% endif %}
+
+            </h4>
+
+            <p class="text-muted mb-0">
+                Review student clearance applications assigned
+                to your department.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- Pending Applications -->
+    <div class="card shadow-sm">
+
+        <div class="card-header bg-white">
+
+            <h5 class="mb-0">
+                Pending Clearance Applications
+            </h5>
+
+        </div>
+
+
+        <div class="card-body">
+
+            {% if not current_user.department_id %}
+
+                <div class="alert alert-warning">
+                    Your account has not been assigned to a department.
+                    Please contact the system administrator.
+                </div>
+
+            {% elif clearance_items %}
+
+                <div class="table-responsive">
+
+                    <table class="table table-hover align-middle">
+
+                        <thead class="table-light">
+
+                            <tr>
+                                <th>Application Reference</th>
+                                <th>Student Name</th>
+                                <th>Registration Number</th>
+                                <th>Submission Date</th>
+                                <th>Decision</th>
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody>
+
+                            {% for item in clearance_items %}
+
+                            <tr>
+
+                                <td>
+                                    <strong>
+                                        UC-{{ "%06d"|format(item.request.id) }}
+                                    </strong>
+                                </td>
+
+
+                                <td>
+                                    {{ item.request.student.full_name }}
+                                </td>
+
+
+                                <td>
+                                    {{ item.request.student.registration_number }}
+                                </td>
+
+
+                                <td>
+                                    {{ item.request.submitted_at.strftime("%d %B %Y") }}
+                                </td>
+
+
+                                <td>
+
+                                    <button
+                                        type="button"
+                                        class="btn btn-sm btn-primary"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#reviewModal{{ item.id }}"
+                                    >
+                                        Review Application
+                                    </button>
+
+                                </td>
+
+                            </tr>
+
+
+                            <!-- Review Modal -->
+                            <div
+                                class="modal fade"
+                                id="reviewModal{{ item.id }}"
+                                tabindex="-1"
+                                aria-hidden="true"
+                            >
+
+                                <div class="modal-dialog">
+
+                                    <div class="modal-content">
+
+                                        <form
+                                            method="POST"
+                                            action="{{ url_for(
+                                                'main.review_clearance',
+                                                item_id=item.id
+                                            ) }}"
+                                        >
+
+                                            <div class="modal-header">
+
+                                                <h5 class="modal-title">
+                                                    Review Student Clearance
+                                                </h5>
+
+                                                <button
+                                                    type="button"
+                                                    class="btn-close"
+                                                    data-bs-dismiss="modal"
+                                                ></button>
+
+                                            </div>
+
+
+                                            <div class="modal-body">
+
+                                                <p>
+                                                    <strong>Student:</strong>
+                                                    {{ item.request.student.full_name }}
+                                                </p>
+
+                                                <p>
+                                                    <strong>Registration:</strong>
+                                                    {{ item.request.student.registration_number }}
+                                                </p>
+
+                                                <p>
+                                                    <strong>Department:</strong>
+                                                    {{ item.department.name }}
+                                                </p>
+
+                                                <hr>
+
+
+                                                <label class="form-label">
+                                                    Clearance Decision
+                                                </label>
+
+                                                <select
+                                                    name="decision"
+                                                    class="form-select"
+                                                    required
+                                                >
+
+                                                    <option value="">
+                                                        Select Decision
+                                                    </option>
+
+                                                    <option value="approved">
+                                                        Approve Clearance
+                                                    </option>
+
+                                                    <option value="rejected">
+                                                        Reject Clearance
+                                                    </option>
+
+                                                </select>
+
+
+                                                <div class="mt-3">
+
+                                                    <label class="form-label">
+                                                        Remarks
+                                                    </label>
+
+                                                    <textarea
+                                                        name="remarks"
+                                                        class="form-control"
+                                                        rows="3"
+                                                        placeholder="Enter review comments or rejection reason..."
+                                                    ></textarea>
+
+                                                </div>
+
+                                            </div>
+
+
+                                            <div class="modal-footer">
+
+                                                <button
+                                                    type="button"
+                                                    class="btn btn-secondary"
+                                                    data-bs-dismiss="modal"
+                                                >
+                                                    Cancel
+                                                </button>
+
+
+                                                <button
+                                                    type="submit"
+                                                    class="btn btn-primary"
+                                                >
+                                                    Submit Decision
+                                                </button>
+
+                                            </div>
+
+                                        </form>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            {% else %}
+
+                <div class="text-center py-5">
+
+                    <h5 class="text-muted">
+                        No Pending Applications
+                    </h5>
+
+                    <p class="text-muted">
+                        There are currently no student clearance
+                        applications awaiting review in your department.
+                    </p>
+
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

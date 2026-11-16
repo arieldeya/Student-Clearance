@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard | UniClear{% endblock %}
+
+{% block content %}
+
+<h1 class="h3 mb-2">System Administrator Dashboard</h1>
+
+<p class="text-muted mb-4">
+    Manage university clearance operations and users.
+</p>
+
+<!-- SYSTEM STATISTICS -->
+
+<div class="row g-3">
+
+    {% for label, value in [
+        ('Students', students),
+        ('Officers', officers),
+        ('Departments', departments),
+        ('Clearance Requests', requests)
+    ] %}
+
+    <div class="col-sm-6 col-lg-3">
+
+        <div class="card shadow-sm h-100">
+
+            <div class="card-body">
+
+                <div class="text-muted">{{ label }}</div>
+
+                <div class="display-6 fw-semibold">
+                    {{ value }}
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    {% endfor %}
+
+</div>
+
+
+<!-- USER MANAGEMENT -->
+
+<div class="mt-5">
+
+    <h4 class="mb-3">User Management</h4>
+
+    <div class="row g-3">
+
+        <div class="col-md-6">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <h5>Department Officers</h5>
+
+                    <p class="text-muted">
+                        Register department officers and assign them
+                        to their respective university departments.
+                    </p>
+
+                    <a href="{{ url_for('main.add_officer') }}"
+                       class="btn btn-primary">
+
+                        + Register New Officer
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="col-md-6">
+
+            <div class="card shadow-sm h-100">
+
+    <div class="card-body">
+
+        <h5>Department Management</h5>
+
+        <p class="text-muted">
+            Add, edit, activate and deactivate university departments.
+        </p>
+
+        <a href="{{ url_for('main.manage_departments') }}"
+           class="btn btn-primary">
+            Manage Departments
+        </a>
+
+    </div>
+
+</div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- REGISTERED OFFICERS -->
+
+<div class="mt-5">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+
+        <div>
+
+            <h4 class="mb-1">Registered Department Officers</h4>
+
+            <p class="text-muted mb-0">
+                View and manage department officer accounts.
+            </p>
+
+        </div>
+
+        <span class="badge bg-primary">
+            {{ registered_officers|length }} Officers
+        </span>
+
+    </div>
+
+
+    <div class="card shadow-sm">
+
+        <div class="card-body">
+
+            {% if registered_officers %}
+
+            <div class="table-responsive">
+
+                <table class="table table-hover align-middle">
+
+                    <thead class="table-light">
+
+                        <tr>
+                            <th>#</th>
+                            <th>Officer Name</th>
+                            <th>Email Address</th>
+                            <th>Assigned Department</th>
+                            <th>Account Status</th>
+                            <th>Action</th>
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        {% for officer in registered_officers %}
+
+                        <tr>
+
+                            <td>{{ loop.index }}</td>
+
+                            <td>
+                                <strong>{{ officer.full_name }}</strong>
+                            </td>
+
+                            <td>{{ officer.email }}</td>
+
+                            <td>
+                                {% if officer.department %}
+                                    {{ officer.department.name }}
+                                {% else %}
+                                    <span class="text-muted">
+                                        Not assigned
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <td>
+
+                                {% if officer.is_active %}
+
+                                    <span class="badge bg-success">
+                                        Active
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge bg-danger">
+                                        Inactive
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+                            <td>
+
+                                <form method="POST"
+                                      action="{{ url_for(
+                                          'main.toggle_officer_status',
+                                          officer_id=officer.id
+                                      ) }}">
+
+                                    {% if officer.is_active %}
+
+                                        <button type="submit"
+                                                class="btn btn-sm btn-outline-danger"
+                                                onclick="return confirm('Are you sure you want to deactivate this officer account?');">
+
+                                            Deactivate
+
+                                        </button>
+
+                                    {% else %}
+
+                                        <button type="submit"
+                                                class="btn btn-sm btn-outline-success">
+
+                                            Activate
+
+                                        </button>
+
+                                    {% endif %}
+
+                                </form>
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            {% else %}
+
+                <div class="text-center py-4">
+
+                    <h6>No officers registered yet.</h6>
+
+                    <p class="text-muted">
+                        Register your first department officer to get started.
+                    </p>
+
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
