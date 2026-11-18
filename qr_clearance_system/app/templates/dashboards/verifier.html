@@ -1,2 +1,36 @@
-{% extends "base.html" %}{% block title %}Verifier | UniClear{% endblock %}
-{% block content %}<h1 class="h3">Certificate verification</h1><div class="alert alert-info">QR scanning and certificate verification will follow the clearance workflow and PDF certificate module.</div>{% endblock %}
+{% extends "base.html" %}
+
+{% block title %}Certificate Verification | UniClear{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <div class="card shadow-sm">
+
+        <div class="card-body p-4">
+
+            <h1 class="h3 mb-3">
+                Certificate Verification
+            </h1>
+
+            <p class="text-muted">
+                Scan a student's UniClear QR code using your device's
+                camera. Opening its verification link will display
+                the certificate's verification result.
+            </p>
+
+            <div class="alert alert-info">
+
+                Only certificates issued after complete departmental
+                approval can be verified as valid.
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

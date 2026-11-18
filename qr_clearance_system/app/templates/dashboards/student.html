@@ -157,12 +157,29 @@
                                 </td>
 
                                <td>
-    <a href="{{ url_for('main.clearance_details', request_id=item.id) }}"
-       class="btn btn-sm btn-outline-primary">
 
-        Track Progress
+    <div class="d-flex gap-2 flex-wrap">
 
-    </a>
+        <a href="{{ url_for('main.clearance_details', request_id=item.id) }}"
+           class="btn btn-sm btn-outline-primary">
+
+            Track Progress
+
+        </a>
+
+        {% if item.status == "approved" %}
+
+            <a href="{{ url_for('main.generate_clearance_qr', request_id=item.id) }}"
+               class="btn btn-sm btn-success">
+
+                Download QR
+
+            </a>
+
+        {% endif %}
+
+    </div>
+
 </td>
 
                             </tr>

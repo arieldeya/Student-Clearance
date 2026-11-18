@@ -9,8 +9,15 @@ from flask import (
     redirect,
     url_for,
     flash,
-    request
+    request,
+    send_file,
+    current_app
 )
+
+from io import BytesIO
+import qrcode
+
+from itsdangerous import URLSafeTimedSerializer, BadSignature
 
 from flask_login import login_required, current_user
 
@@ -1040,3 +1047,135 @@ def toggle_department_status(department_id):
         )
 
     return redirect(url_for("main.manage_departments"))
+
+# ==========================================================
+# QR CODE GENERATION AND CERTIFICATE VERIFICATION
+# ==========================================================
+
+def get_verification_serializer():
+
+    return URLSafeTimedSerializer(
+        current_app.config["SECRET_KEY"],
+        salt="uniclear-certificate-verification"
+    )
+
+
+# ----------------------------------------------------------
+# GENERATE QR CODE
+# ----------------------------------------------------------
+
+@main_bp.route("/clearance/<int:request_id>/qr")
+@login_required
+def generate_clearance_qr(request_id):
+
+    # Only students can access their QR codes.
+    if current_user.role != "student":
+        abort(403)
+
+    clearance_request = ClearanceRequest.query.filter_by(
+        id=request_id,
+        student_id=current_user.id
+    ).first_or_404()
+
+    # QR codes are available only after complete approval.
+    if clearance_request.status != "approved":
+
+        flash(
+            "Your QR certificate will be available after all departments approve your clearance.",
+            "warning"
+        )
+
+        return redirect(
+            url_for(
+                "main.clearance_details",
+                request_id=clearance_request.id
+            )
+        )
+
+    # Generate a secure signed token.
+    token = get_verification_serializer().dumps({
+        "request_id": clearance_request.id,
+        "purpose": "certificate_verification"
+    })
+
+    verification_url = url_for(
+        "main.verify_certificate",
+        token=token,
+        _external=True
+    )
+
+    # Generate QR image.
+    qr = qrcode.make(verification_url)
+
+    image_buffer = BytesIO()
+    qr.save(image_buffer, format="PNG")
+    image_buffer.seek(0)
+
+    return send_file(
+        image_buffer,
+        mimetype="image/png",
+        download_name=f"UniClear_UC-{clearance_request.id:06d}.png"
+    )
+
+
+# ----------------------------------------------------------
+# VERIFY CERTIFICATE
+# ----------------------------------------------------------
+
+@main_bp.route("/verify/<token>")
+@login_required
+def verify_certificate(token):
+
+    # Only university verifiers can verify certificates.
+    if current_user.role != "verifier":
+        abort(403)
+
+    try:
+
+        data = get_verification_serializer().loads(token)
+
+        request_id = data.get("request_id")
+
+        if data.get("purpose") != "certificate_verification":
+            abort(400)
+
+        clearance_request = ClearanceRequest.query.get(
+            request_id
+        )
+
+        if not clearance_request:
+            return render_template(
+                "verification_result.html",
+                valid=False,
+                clearance_request=None
+            )
+
+        # Check actual departmental approval records.
+        all_items = clearance_request.items
+
+        fully_approved = (
+            len(all_items) > 0
+            and all(
+                item.status == "approved"
+                for item in all_items
+            )
+        )
+
+        valid = (
+            clearance_request.status == "approved"
+            and fully_approved
+        )
+
+        return render_template(
+            "verification_result.html",
+            valid=valid,
+            clearance_request=clearance_request
+        )
+
+    except BadSignature:
+
+        return render_template(
+            "verification_result.html",
+            valid=False,
+            clearance_request=None
+        )

@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Verification Result | UniClear{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <div class="card shadow-sm">
+
+        <div class="card-body text-center p-4">
+
+            {% if valid %}
+
+                <div class="alert alert-success">
+
+                    <h2 class="h3">VALID CERTIFICATE</h2>
+
+                    <p class="mb-0">
+                        This university clearance certificate
+                        has been successfully verified.
+                    </p>
+
+                </div>
+
+                <h5 class="mt-4">Student Information</h5>
+
+                <table class="table table-bordered text-start">
+
+                    <tr>
+                        <th>Application Reference</th>
+                        <td>
+                            UC-{{ "%06d"|format(clearance_request.id) }}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th>Student Name</th>
+                        <td>
+                            {{ clearance_request.student.full_name }}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th>Registration Number</th>
+                        <td>
+                            {{ clearance_request.student.registration_number }}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th>Submission Date</th>
+                        <td>
+                            {{ clearance_request.submitted_at.strftime('%d %b %Y') }}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th>Clearance Status</th>
+                        <td>
+                            <span class="badge bg-success">
+                                Approved
+                            </span>
+                        </td>
+                    </tr>
+
+                </table>
+
+            {% else %}
+
+                <div class="alert alert-danger">
+
+                    <h2 class="h3">INVALID CERTIFICATE</h2>
+
+                    <p class="mb-0">
+                        This certificate could not be verified.
+                        It may be invalid, incomplete or no longer approved.
+                    </p>
+
+                </div>
+
+            {% endif %}
+
+            <a href="{{ url_for('main.dashboard') }}"
+               class="btn btn-primary mt-3">
+
+                Back to Dashboard
+
+            </a>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

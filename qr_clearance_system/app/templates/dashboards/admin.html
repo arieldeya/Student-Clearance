@@ -38,7 +38,7 @@
         </div>
 
     </div>
-
+00
     {% endfor %}
 
 </div>
@@ -51,6 +51,8 @@
     <h4 class="mb-3">User Management</h4>
 
     <div class="row g-3">
+
+        <!-- DEPARTMENT OFFICERS -->
 
         <div class="col-md-6">
 
@@ -79,26 +81,30 @@
         </div>
 
 
+        <!-- DEPARTMENT MANAGEMENT -->
+
         <div class="col-md-6">
 
             <div class="card shadow-sm h-100">
 
-    <div class="card-body">
+                <div class="card-body">
 
-        <h5>Department Management</h5>
+                    <h5>Department Management</h5>
 
-        <p class="text-muted">
-            Add, edit, activate and deactivate university departments.
-        </p>
+                    <p class="text-muted">
+                        Add, edit, activate and deactivate university departments.
+                    </p>
 
-        <a href="{{ url_for('main.manage_departments') }}"
-           class="btn btn-primary">
-            Manage Departments
-        </a>
+                    <a href="{{ url_for('main.manage_departments') }}"
+                       class="btn btn-primary">
 
-    </div>
+                        Manage Departments
 
-</div>
+                    </a>
+
+                </div>
+
+            </div>
 
         </div>
 
@@ -148,7 +154,7 @@
                             <th>Email Address</th>
                             <th>Assigned Department</th>
                             <th>Account Status</th>
-                            <th>Action</th>
+                            <th>Actions</th>
                         </tr>
 
                     </thead>
@@ -195,36 +201,57 @@
 
                             </td>
 
+                            <!-- OFFICER ACTIONS -->
+
                             <td>
 
-                                <form method="POST"
-                                      action="{{ url_for(
-                                          'main.toggle_officer_status',
-                                          officer_id=officer.id
-                                      ) }}">
+                                <div class="d-flex flex-wrap gap-2">
 
-                                    {% if officer.is_active %}
+                                    <!-- EDIT OFFICER -->
 
-                                        <button type="submit"
-                                                class="btn btn-sm btn-outline-danger"
-                                                onclick="return confirm('Are you sure you want to deactivate this officer account?');">
+                                    <a href="{{ url_for(
+                                        'main.edit_officer',
+                                        officer_id=officer.id
+                                    ) }}"
+                                       class="btn btn-sm btn-outline-primary">
 
-                                            Deactivate
+                                        Edit
 
-                                        </button>
+                                    </a>
 
-                                    {% else %}
 
-                                        <button type="submit"
-                                                class="btn btn-sm btn-outline-success">
+                                    <!-- ACTIVATE / DEACTIVATE -->
 
-                                            Activate
+                                    <form method="POST"
+                                          action="{{ url_for(
+                                              'main.toggle_officer_status',
+                                              officer_id=officer.id
+                                          ) }}">
 
-                                        </button>
+                                        {% if officer.is_active %}
 
-                                    {% endif %}
+                                            <button type="submit"
+                                                    class="btn btn-sm btn-outline-danger"
+                                                    onclick="return confirm('Are you sure you want to deactivate this officer account?');">
 
-                                </form>
+                                                Deactivate
+
+                                            </button>
+
+                                        {% else %}
+
+                                            <button type="submit"
+                                                    class="btn btn-sm btn-outline-success">
+
+                                                Activate
+
+                                            </button>
+
+                                        {% endif %}
+
+                                    </form>
+
+                                </div>
 
                             </td>
 
