@@ -1,162 +1,383 @@
 {% extends "base.html" %}
 
-{% block title %}Admin Dashboard | UniClear{% endblock %}
+{% block title %}Administration Dashboard | UniClear{% endblock %}
 
 {% block content %}
 
-<h1 class="h3 mb-2">System Administrator Dashboard</h1>
+<div class="dashboard-content" id="overview">
 
-<p class="text-muted mb-4">
-    Manage university clearance operations and users.
-</p>
+    <!-- WELCOME BANNER -->
 
-<!-- SYSTEM STATISTICS -->
-
-<div class="row g-3">
-
-    {% for label, value in [
-        ('Students', students),
-        ('Officers', officers),
-        ('Departments', departments),
-        ('Clearance Requests', requests)
-    ] %}
-
-    <div class="col-sm-6 col-lg-3">
-
-        <div class="card shadow-sm h-100">
-
-            <div class="card-body">
-
-                <div class="text-muted">{{ label }}</div>
-
-                <div class="display-6 fw-semibold">
-                    {{ value }}
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-00
-    {% endfor %}
-
-</div>
-
-
-<!-- USER MANAGEMENT -->
-
-<div class="mt-5">
-
-    <h4 class="mb-3">User Management</h4>
-
-    <div class="row g-3">
-
-        <!-- DEPARTMENT OFFICERS -->
-
-        <div class="col-md-6">
-
-            <div class="card shadow-sm h-100">
-
-                <div class="card-body">
-
-                    <h5>Department Officers</h5>
-
-                    <p class="text-muted">
-                        Register department officers and assign them
-                        to their respective university departments.
-                    </p>
-
-                    <a href="{{ url_for('main.add_officer') }}"
-                       class="btn btn-primary">
-
-                        + Register New Officer
-
-                    </a>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        <!-- DEPARTMENT MANAGEMENT -->
-
-        <div class="col-md-6">
-
-            <div class="card shadow-sm h-100">
-
-                <div class="card-body">
-
-                    <h5>Department Management</h5>
-
-                    <p class="text-muted">
-                        Add, edit, activate and deactivate university departments.
-                    </p>
-
-                    <a href="{{ url_for('main.manage_departments') }}"
-                       class="btn btn-primary">
-
-                        Manage Departments
-
-                    </a>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-</div>
-
-
-<!-- REGISTERED OFFICERS -->
-
-<div class="mt-5">
-
-    <div class="d-flex justify-content-between align-items-center mb-3">
+    <section class="welcome-banner mb-4">
 
         <div>
+            <h2>Welcome to UniClear Administration</h2>
 
-            <h4 class="mb-1">Registered Department Officers</h4>
-
-            <p class="text-muted mb-0">
-                View and manage department officer accounts.
+            <p>
+                Manage university clearance operations, students,
+                departments and certificate verification.
             </p>
+        </div>
+
+        <div class="welcome-icon">
+            <i class="fas fa-university"></i>
+        </div>
+
+    </section>
+
+
+    <!-- STATISTICS CARDS -->
+
+    <h5 class="mb-3">System Statistics</h5>
+
+    <section class="stats-grid mb-4">
+
+        <div class="stat-card">
+            <div class="stat-info">
+                <span>Total Students</span>
+                <h2>{{ students }}</h2>
+                <small>Registered student accounts</small>
+            </div>
+            <div class="stat-icon blue">
+                <i class="fas fa-user-graduate"></i>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-info">
+                <span>Department Officers</span>
+                <h2>{{ officers }}</h2>
+                <small>Registered officers</small>
+            </div>
+            <div class="stat-icon purple">
+                <i class="fas fa-user-tie"></i>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-info">
+                <span>Total Departments</span>
+                <h2>{{ departments }}</h2>
+                <small>University departments</small>
+            </div>
+            <div class="stat-icon orange">
+                <i class="fas fa-building"></i>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-info">
+                <span>Clearance Requests</span>
+                <h2>{{ requests }}</h2>
+                <small>Total submitted requests</small>
+            </div>
+            <div class="stat-icon green">
+                <i class="fas fa-file-alt"></i>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-info">
+                <span>Approved Clearances</span>
+                <h2>{{ approved_requests }}</h2>
+                <small>Fully approved requests</small>
+            </div>
+            <div class="stat-icon green">
+                <i class="fas fa-check-circle"></i>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-info">
+                <span>Pending Clearances</span>
+                <h2>{{ pending_requests }}</h2>
+                <small>Awaiting completion</small>
+            </div>
+            <div class="stat-icon orange">
+                <i class="fas fa-clock"></i>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-info">
+                <span>Rejected Clearances</span>
+                <h2>{{ rejected_requests }}</h2>
+                <small>Rejected applications</small>
+            </div>
+            <div class="stat-icon red">
+                <i class="fas fa-times-circle"></i>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-info">
+                <span>Registered Verifiers</span>
+                <h2>{{ verifiers }}</h2>
+                <small>Certificate verification accounts</small>
+            </div>
+            <div class="stat-icon purple">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+        </div>
+
+    </section>
+
+
+    <!-- ANALYTICS -->
+
+    <h4 class="mb-3">Clearance Analytics</h4>
+
+    <section class="analytics-grid mb-4">
+
+        <div class="dashboard-panel">
+
+            <div class="panel-header">
+                <div>
+                    <h5>Clearance Status Distribution</h5>
+                    <small>Overall clearance request status</small>
+                </div>
+
+                <i class="fas fa-chart-pie"></i>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="clearanceStatusChart"></canvas>
+            </div>
 
         </div>
 
-        <span class="badge bg-primary">
-            {{ registered_officers|length }} Officers
-        </span>
 
-    </div>
+        <div class="dashboard-panel">
+
+            <div class="panel-header">
+                <div>
+                    <h5>Department Clearance Progress</h5>
+                    <small>Approved clearance items by department</small>
+                </div>
+
+                <i class="fas fa-chart-column"></i>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="departmentProgressChart"></canvas>
+            </div>
+
+        </div>
+
+    </section>
 
 
-    <div class="card shadow-sm">
+    <!-- RECENT CLEARANCE REQUESTS -->
 
-        <div class="card-body">
+    <section class="dashboard-panel mb-4">
 
-            {% if registered_officers %}
+        <div class="panel-header">
+
+            <div>
+                <h5>Recent Clearance Requests</h5>
+                <small>Latest student clearance applications</small>
+            </div>
+
+            <i class="fas fa-file-circle-check"></i>
+
+        </div>
+
+        <div class="table-responsive">
+
+            <table class="table officer-table align-middle">
+
+                <thead>
+                    <tr>
+                        <th>Reference</th>
+                        <th>Student Name</th>
+                        <th>Registration Number</th>
+                        <th>Submission Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for item in recent_requests %}
+
+                    <tr>
+
+                        <td>
+                            <strong>UC-{{ "%06d"|format(item.id) }}</strong>
+                        </td>
+
+                        <td>
+                            {{ item.student.full_name }}
+                        </td>
+
+                        <td>
+                            {{ item.student.registration_number or "Not provided" }}
+                        </td>
+
+                        <td>
+                            {{ item.submitted_at.strftime("%d %b %Y") }}
+                        </td>
+
+                        <td>
+
+                            {% if item.status == "approved" %}
+
+                                <span class="status-badge active">
+                                    Approved
+                                </span>
+
+                            {% elif item.status == "rejected" %}
+
+                                <span class="status-badge inactive">
+                                    Rejected
+                                </span>
+
+                            {% else %}
+
+                                <span class="badge bg-warning text-dark">
+                                    {{ item.status|replace("_", " ")|title }}
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+                    </tr>
+
+                    {% else %}
+
+                    <tr>
+                        <td colspan="5" class="text-center py-4">
+                            No clearance requests available.
+                        </td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+
+
+    <!-- USER MANAGEMENT -->
+
+    <section id="management" class="section-spacing">
+
+        <div class="section-heading">
+            <div>
+                <h4>User Management</h4>
+                <p>Manage university system accounts.</p>
+            </div>
+        </div>
+
+        <div class="management-grid">
+
+            <div class="management-card">
+
+                <div class="management-icon blue">
+                    <i class="fas fa-user-tie"></i>
+                </div>
+
+                <h5>Department Officers</h5>
+
+                <p>
+                    Register officers and assign them
+                    to their respective departments.
+                </p>
+
+                <a href="{{ url_for('main.add_officer') }}"
+                   class="management-button">
+                    Register Officer
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+
+            </div>
+
+
+            <div class="management-card">
+
+                <div class="management-icon orange">
+                    <i class="fas fa-building"></i>
+                </div>
+
+                <h5>Department Management</h5>
+
+                <p>
+                    Add, edit, activate and deactivate
+                    university departments.
+                </p>
+
+                <a href="{{ url_for('main.manage_departments') }}"
+                   class="management-button">
+                    Manage Departments
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+
+            </div>
+
+
+            <div class="management-card">
+
+                <div class="management-icon green">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+
+                <h5>Certificate Verifiers</h5>
+
+                <p>
+                    Create accounts for officers responsible
+                    for verifying clearance certificates.
+                </p>
+
+                <a href="{{ url_for('main.add_verifier') }}"
+                   class="management-button">
+                    Register Verifier
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- REGISTERED DEPARTMENT OFFICERS -->
+
+    <section id="officers" class="section-spacing">
+
+        <div class="section-heading">
+
+            <div>
+                <h4>Registered Department Officers</h4>
+                <p>View registered department officer accounts.</p>
+            </div>
+
+            <span class="count-badge">
+                {{ registered_officers|length }} Officers
+            </span>
+
+        </div>
+
+        <div class="dashboard-panel">
 
             <div class="table-responsive">
 
-                <table class="table table-hover align-middle">
+                <table class="table officer-table align-middle">
 
-                    <thead class="table-light">
-
+                    <thead>
                         <tr>
                             <th>#</th>
                             <th>Officer Name</th>
                             <th>Email Address</th>
-                            <th>Assigned Department</th>
-                            <th>Account Status</th>
+                            <th>Department</th>
+                            <th>Status</th>
                             <th>Actions</th>
                         </tr>
-
                     </thead>
 
                     <tbody>
@@ -174,53 +395,30 @@
                             <td>{{ officer.email }}</td>
 
                             <td>
-                                {% if officer.department %}
-                                    {{ officer.department.name }}
-                                {% else %}
-                                    <span class="text-muted">
-                                        Not assigned
-                                    </span>
-                                {% endif %}
+                                {{ officer.department.name if officer.department else "Not assigned" }}
                             </td>
 
                             <td>
 
                                 {% if officer.is_active %}
-
-                                    <span class="badge bg-success">
-                                        Active
-                                    </span>
-
+                                    <span class="status-badge active">Active</span>
                                 {% else %}
-
-                                    <span class="badge bg-danger">
-                                        Inactive
-                                    </span>
-
+                                    <span class="status-badge inactive">Inactive</span>
                                 {% endif %}
 
                             </td>
 
-                            <!-- OFFICER ACTIONS -->
-
                             <td>
 
-                                <div class="d-flex flex-wrap gap-2">
-
-                                    <!-- EDIT OFFICER -->
+                                <div class="d-flex gap-2">
 
                                     <a href="{{ url_for(
                                         'main.edit_officer',
                                         officer_id=officer.id
                                     ) }}"
                                        class="btn btn-sm btn-outline-primary">
-
                                         Edit
-
                                     </a>
-
-
-                                    <!-- ACTIVATE / DEACTIVATE -->
 
                                     <form method="POST"
                                           action="{{ url_for(
@@ -232,19 +430,15 @@
 
                                             <button type="submit"
                                                     class="btn btn-sm btn-outline-danger"
-                                                    onclick="return confirm('Are you sure you want to deactivate this officer account?');">
-
+                                                    onclick="return confirm('Deactivate this officer?');">
                                                 Deactivate
-
                                             </button>
 
                                         {% else %}
 
                                             <button type="submit"
                                                     class="btn btn-sm btn-outline-success">
-
                                                 Activate
-
                                             </button>
 
                                         {% endif %}
@@ -257,6 +451,14 @@
 
                         </tr>
 
+                        {% else %}
+
+                        <tr>
+                            <td colspan="6" class="text-center">
+                                No department officers registered.
+                            </td>
+                        </tr>
+
                         {% endfor %}
 
                     </tbody>
@@ -265,24 +467,233 @@
 
             </div>
 
-            {% else %}
+        </div>
 
-                <div class="text-center py-4">
+    </section>
 
-                    <h6>No officers registered yet.</h6>
 
-                    <p class="text-muted">
-                        Register your first department officer to get started.
-                    </p>
+    <!-- REGISTERED VERIFIERS -->
 
-                </div>
+    <section id="verifiers" class="section-spacing">
 
-            {% endif %}
+        <div class="section-heading">
+
+            <div>
+                <h4>Registered Certificate Verifiers</h4>
+                <p>View certificate verification accounts.</p>
+            </div>
+
+            <span class="count-badge">
+                {{ registered_verifiers|length }} Verifiers
+            </span>
 
         </div>
 
-    </div>
+        <div class="dashboard-panel">
+
+            <div class="table-responsive">
+
+                <table class="table officer-table align-middle">
+
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Verifier Name</th>
+                            <th>Email Address</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for verifier in registered_verifiers %}
+
+                        <tr>
+
+                            <td>{{ loop.index }}</td>
+
+                            <td>
+                                <strong>{{ verifier.full_name }}</strong>
+                            </td>
+
+                            <td>{{ verifier.email }}</td>
+
+                            <td>
+
+                                {% if verifier.is_active %}
+                                    <span class="status-badge active">Active</span>
+                                {% else %}
+                                    <span class="status-badge inactive">Inactive</span>
+                                {% endif %}
+
+                            </td>
+
+                        </tr>
+
+                        {% else %}
+
+                        <tr>
+                            <td colspan="4" class="text-center py-4">
+                                No certificate verifiers registered.
+                            </td>
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- FOOTER -->
+
+    <footer class="dashboard-footer">
+        UniClear University Clearance Management System
+        <span>© 2026</span>
+    </footer>
 
 </div>
+
+
+<!-- CHART.JS -->
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    // CLEARANCE STATUS DISTRIBUTION
+
+    const statusCanvas = document.getElementById(
+        "clearanceStatusChart"
+    );
+
+    new Chart(statusCanvas, {
+
+        type: "doughnut",
+
+        data: {
+
+            labels: [
+                "Approved",
+                "Pending",
+                "Rejected"
+            ],
+
+            datasets: [{
+
+                data: {{ clearance_status_data|tojson }},
+
+                backgroundColor: [
+                    "#20a779",
+                    "#ed9b32",
+                    "#dc3545"
+                ],
+
+                borderWidth: 3,
+                borderColor: "#ffffff"
+
+            }]
+
+        },
+
+        options: {
+
+            responsive: true,
+            maintainAspectRatio: false,
+
+            plugins: {
+
+                legend: {
+                    position: "bottom"
+                }
+
+            },
+
+            cutout: "65%"
+
+        }
+
+    });
+
+
+    // DEPARTMENT CLEARANCE PROGRESS
+
+    const departmentCanvas = document.getElementById(
+        "departmentProgressChart"
+    );
+
+    const departmentNames = {{ department_progress|map(attribute="name")|list|tojson }};
+
+    const departmentValues = {{ department_progress|map(attribute="progress")|list|tojson }};
+
+    new Chart(departmentCanvas, {
+
+        type: "bar",
+
+        data: {
+
+            labels: departmentNames,
+
+            datasets: [{
+
+                label: "Approval Progress (%)",
+
+                data: departmentValues,
+
+                backgroundColor: "#3977e8",
+
+                borderRadius: 7,
+
+                maxBarThickness: 45
+
+            }]
+
+        },
+
+        options: {
+
+            indexAxis: "y",
+
+            responsive: true,
+
+            maintainAspectRatio: false,
+
+            plugins: {
+
+                legend: {
+                    display: false
+                }
+
+            },
+
+            scales: {
+
+                x: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        callback: function(value) {
+                            return value + "%";
+                        }
+                    }
+                }
+
+            }
+
+        }
+
+    });
+
+});
+
+</script>
 
 {% endblock %}

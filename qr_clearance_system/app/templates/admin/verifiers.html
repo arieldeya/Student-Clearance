@@ -1,0 +1,351 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Certificate Verifiers | UniClear{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid">
+
+    <!-- PAGE HEADER -->
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+            <h3 class="fw-bold mb-1">
+                Certificate Verifiers Management
+            </h3>
+
+            <p class="text-muted mb-0">
+                View, search and manage certificate verification accounts.
+            </p>
+        </div>
+
+        <a href="{{ url_for('main.add_verifier') }}"
+           class="btn btn-primary">
+
+            <i class="fas fa-user-plus me-2"></i>
+            Register New Verifier
+
+        </a>
+
+    </div>
+
+
+    <!-- STATISTICS -->
+
+    <div class="row g-3 mb-4">
+
+        <!-- TOTAL VERIFIERS -->
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm border-0 h-100">
+
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between align-items-center">
+
+                        <div>
+
+                            <p class="text-muted mb-1">
+                                Total Verifiers
+                            </p>
+
+                            <h3 class="fw-bold mb-0">
+                                {{ total_verifiers }}
+                            </h3>
+
+                        </div>
+
+                        <div class="text-primary fs-2">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ACTIVE VERIFIERS -->
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm border-0 h-100">
+
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between align-items-center">
+
+                        <div>
+
+                            <p class="text-muted mb-1">
+                                Active Verifiers
+                            </p>
+
+                            <h3 class="fw-bold text-success mb-0">
+                                {{ active_verifiers }}
+                            </h3>
+
+                        </div>
+
+                        <div class="text-success fs-2">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- INACTIVE VERIFIERS -->
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm border-0 h-100">
+
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between align-items-center">
+
+                        <div>
+
+                            <p class="text-muted mb-1">
+                                Inactive Verifiers
+                            </p>
+
+                            <h3 class="fw-bold text-danger mb-0">
+                                {{ inactive_verifiers }}
+                            </h3>
+
+                        </div>
+
+                        <div class="text-danger fs-2">
+                            <i class="fas fa-user-slash"></i>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- VERIFIER TABLE -->
+
+    <div class="card border-0 shadow-sm">
+
+        <div class="card-header bg-white py-3">
+
+            <div class="d-flex justify-content-between align-items-center">
+
+                <div>
+
+                    <h5 class="fw-bold mb-1">
+                        Registered Certificate Verifiers
+                    </h5>
+
+                    <small class="text-muted">
+                        Manage accounts responsible for certificate verification.
+                    </small>
+
+                </div>
+
+                <span class="badge bg-primary">
+                    {{ verifiers|length }} Verifiers
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <!-- SEARCH -->
+
+        <div class="card-body border-bottom">
+
+            <form method="GET"
+                  action="{{ url_for('main.manage_verifiers') }}">
+
+                <div class="row g-2">
+
+                    <div class="col-md-10">
+
+                        <div class="input-group">
+
+                            <span class="input-group-text bg-white">
+                                <i class="fas fa-search"></i>
+                            </span>
+
+                            <input type="text"
+                                   name="search"
+                                   class="form-control"
+                                   placeholder="Search by verifier name or email..."
+                                   value="{{ search }}">
+
+                        </div>
+
+                    </div>
+
+                    <div class="col-md-2">
+
+                        <button type="submit"
+                                class="btn btn-primary w-100">
+
+                            Search
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </form>
+
+        </div>
+
+
+        <!-- TABLE -->
+
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle mb-0">
+
+                <thead class="table-light">
+
+                    <tr>
+
+                        <th>#</th>
+
+                        <th>Verifier Name</th>
+
+                        <th>Email Address</th>
+
+                        <th>Account Status</th>
+
+                        <th>Registration Date</th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    {% for verifier in verifiers %}
+
+                    <tr>
+
+                        <td>
+                            {{ loop.index }}
+                        </td>
+
+                        <td>
+
+                            <strong>
+                                {{ verifier.full_name }}
+                            </strong>
+
+                        </td>
+
+                        <td>
+                            {{ verifier.email }}
+                        </td>
+
+                        <td>
+
+                            {% if verifier.is_active %}
+
+                                <span class="badge bg-success">
+                                    Active
+                                </span>
+
+                            {% else %}
+
+                                <span class="badge bg-danger">
+                                    Inactive
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+                        <td>
+
+                            {% if verifier.created_at %}
+
+                                {{ verifier.created_at.strftime('%d %b %Y') }}
+
+                            {% else %}
+
+                                <span class="text-muted">
+                                    Not available
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+                    </tr>
+
+                    {% else %}
+
+                    <tr>
+
+                        <td colspan="5"
+                            class="text-center py-5">
+
+                            <i class="fas fa-shield-alt fa-3x text-muted mb-3"></i>
+
+                            <h6 class="text-muted">
+                                No certificate verifiers found.
+                            </h6>
+
+                            {% if search %}
+
+                                <a href="{{ url_for('main.manage_verifiers') }}"
+                                   class="btn btn-sm btn-outline-primary mt-2">
+
+                                    Clear Search
+
+                                </a>
+
+                            {% endif %}
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+        <!-- TABLE FOOTER -->
+
+        <div class="card-footer bg-white text-muted">
+
+            Showing {{ verifiers|length }} verifier(s).
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

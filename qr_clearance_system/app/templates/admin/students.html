@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container-fluid">
+
+    <!-- PAGE HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Student Management</h2>
+            <p class="text-muted mb-0">
+                Manage registered university student accounts.
+            </p>
+        </div>
+
+        <a href="{{ url_for('main.dashboard') }}"
+           class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Dashboard
+        </a>
+    </div>
+
+    <!-- STUDENT STATISTICS -->
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <p class="text-muted mb-1">Total Students</p>
+                    <h3 class="fw-bold">{{ total_students }}</h3>
+                    <small class="text-muted">Registered student accounts</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <p class="text-muted mb-1">Active Students</p>
+                    <h3 class="fw-bold text-success">{{ active_students }}</h3>
+                    <small class="text-muted">Currently active accounts</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <p class="text-muted mb-1">Inactive Students</p>
+                    <h3 class="fw-bold text-danger">{{ inactive_students }}</h3>
+                    <small class="text-muted">Deactivated accounts</small>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- STUDENT TABLE -->
+    <div class="card border-0 shadow-sm">
+
+        <div class="card-header bg-white py-3">
+            <h5 class="fw-bold mb-0">Registered Students</h5>
+            <small class="text-muted">
+                View and manage university student accounts.
+            </small>
+        </div>
+
+        <div class="card-body">
+
+            <!-- SEARCH FORM -->
+            <form method="GET"
+                  action="{{ url_for('main.manage_students') }}"
+                  class="row g-2 mb-4">
+
+                <div class="col-md-9">
+                    <input
+                        type="text"
+                        name="search"
+                        class="form-control"
+                        placeholder="Search by name, registration number or email..."
+                        value="{{ search }}">
+                </div>
+
+                <div class="col-md-3 d-flex gap-2">
+
+                    <button type="submit"
+                            class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Search
+                    </button>
+
+                    <a href="{{ url_for('main.manage_students') }}"
+                       class="btn btn-outline-secondary">
+                        Reset
+                    </a>
+
+                </div>
+
+            </form>
+
+            <!-- RESULTS INFORMATION -->
+            <div class="d-flex justify-content-between mb-3">
+
+                <span class="text-muted">
+                    Showing {{ students|length }} student(s)
+                </span>
+
+                {% if search %}
+                    <span class="badge bg-info text-dark">
+                        Search: {{ search }}
+                    </span>
+                {% endif %}
+
+            </div>
+
+            <!-- RESPONSIVE TABLE -->
+            <div class="table-responsive">
+
+                <table class="table table-hover align-middle">
+
+                    <thead class="table-light">
+
+                        <tr>
+                            <th>#</th>
+                            <th>Student Name</th>
+                            <th>Registration Number</th>
+                            <th>Email Address</th>
+                            <th>Clearance Status</th>
+                            <th>Account Status</th>
+                            <th>Action</th>
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        {% for student in students %}
+
+                        <tr>
+
+                            <td>{{ loop.index }}</td>
+
+                            <td>
+                                <strong>{{ student.full_name }}</strong>
+                            </td>
+
+                            <td>
+                                {{ student.registration_number or 'Not provided' }}
+                            </td>
+
+                            <td>{{ student.email }}</td>
+
+                            <td>
+                                {% set latest_request = student.clearance_requests|sort(attribute='submitted_at', reverse=True)|first %}
+
+                                {% if latest_request %}
+
+                                    {% if latest_request.status == 'approved' %}
+                                        <span class="badge bg-success">Approved</span>
+
+                                    {% elif latest_request.status == 'rejected' %}
+                                        <span class="badge bg-danger">Rejected</span>
+
+                                    {% elif latest_request.status == 'in_progress' %}
+                                        <span class="badge bg-info">In Progress</span>
+
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">Pending</span>
+                                    {% endif %}
+
+                                {% else %}
+
+                                    <span class="badge bg-secondary">
+                                        No Application
+                                    </span>
+
+                                {% endif %}
+                            </td>
+
+                            <td>
+
+                                {% if student.is_active %}
+
+                                    <span class="badge bg-success">
+                                        Active
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge bg-danger">
+                                        Inactive
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+                            <td>
+
+                                <form
+                                    method="POST"
+                                    action="{{ url_for('main.toggle_student_status', student_id=student.id) }}"
+                                    onsubmit="return confirm('Are you sure you want to change this student account status?');">
+
+                                    <button
+                                        type="submit"
+                                        class="btn btn-sm {% if student.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}">
+
+                                        {% if student.is_active %}
+                                            Deactivate
+                                        {% else %}
+                                            Activate
+                                        {% endif %}
+
+                                    </button>
+
+                                </form>
+
+                            </td>
+
+                        </tr>
+
+                        {% else %}
+
+                        <tr>
+
+                            <td colspan="7"
+                                class="text-center py-5">
+
+                                <h6 class="text-muted">
+                                    No students found.
+                                </h6>
+
+                                <p class="text-muted mb-0">
+                                    Try another search term.
+                                </p>
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

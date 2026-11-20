@@ -3,34 +3,236 @@
 {% block title %}Certificate Verification | UniClear{% endblock %}
 
 {% block content %}
-
 <div class="container mt-4">
 
-    <div class="card shadow-sm">
-
+    <div class="card shadow-sm mb-4">
         <div class="card-body p-4">
 
-            <h1 class="h3 mb-3">
-                Certificate Verification
-            </h1>
+            <h1 class="h3 mb-3">Certificate Verification</h1>
 
             <p class="text-muted">
-                Scan a student's UniClear QR code using your device's
-                camera. Opening its verification link will display
-                the certificate's verification result.
+                Verify a student's university clearance certificate
+                by scanning its QR code or entering its verification link.
             </p>
 
             <div class="alert alert-info">
-
                 Only certificates issued after complete departmental
                 approval can be verified as valid.
-
             </div>
 
-        </div>
+            <hr>
 
+            <h5 class="mb-3">Scan QR Code Using Webcam</h5>
+
+            <div class="mb-3">
+                <video
+                    id="qr-video"
+                    class="w-100 border rounded"
+                    style="max-width: 500px; display: none;"
+                    autoplay
+                    muted
+                    playsinline>
+                </video>
+            </div>
+
+            <div class="d-flex gap-2 mb-3">
+                <button
+                    type="button"
+                    id="start-scanner"
+                    class="btn btn-success">
+                    Start Camera Scanner
+                </button>
+
+                <button
+                    type="button"
+                    id="stop-scanner"
+                    class="btn btn-danger"
+                    disabled>
+                    Stop Scanner
+                </button>
+            </div>
+
+            <div id="scanner-status"
+                 class="alert alert-secondary">
+                Camera scanner is not running.
+            </div>
+
+            <hr>
+
+            <h5 class="mb-3">Manual Certificate Verification</h5>
+
+            <form method="POST"
+                  action="{{ url_for('main.submit_verification_link') }}"
+                  id="verification-form">
+
+                <div class="mb-3">
+                    <label for="verification_url" class="form-label">
+                        Certificate Verification URL
+                    </label>
+
+                    <input
+                        type="url"
+                        class="form-control"
+                        id="verification_url"
+                        name="verification_url"
+                        placeholder="Paste the QR verification link here"
+                        required
+                    >
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    Verify Certificate
+                </button>
+
+            </form>
+
+        </div>
     </div>
 
 </div>
+
+<script src="https://unpkg.com/@zxing/browser@0.2.1/umd/zxing-browser.min.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const video = document.getElementById("qr-video");
+    const startButton = document.getElementById("start-scanner");
+    const stopButton = document.getElementById("stop-scanner");
+    const statusBox = document.getElementById("scanner-status");
+    const verificationInput = document.getElementById("verification_url");
+    const verificationForm = document.getElementById("verification-form");
+
+    let codeReader = null;
+    let scannerControls = null;
+    let scanning = false;
+
+    function updateStatus(message, type = "secondary") {
+        statusBox.className = "alert alert-" + type;
+        statusBox.textContent = message;
+    }
+
+    function stopScanner() {
+
+        scanning = false;
+
+        if (scannerControls) {
+            scannerControls.stop();
+            scannerControls = null;
+        }
+
+        video.pause();
+        video.srcObject = null;
+        video.style.display = "none";
+
+        startButton.disabled = false;
+        stopButton.disabled = true;
+    }
+
+    startButton.addEventListener("click", async function () {
+
+        if (typeof ZXingBrowser === "undefined") {
+            updateStatus(
+                "QR scanning library could not load. Check your internet connection and refresh the page.",
+                "danger"
+            );
+            return;
+        }
+
+        try {
+
+            codeReader = new ZXingBrowser.BrowserQRCodeReader();
+
+            updateStatus("Requesting camera permission...", "info");
+
+            scanning = true;
+
+            startButton.disabled = true;
+            stopButton.disabled = false;
+
+            video.style.display = "block";
+
+            scannerControls = await codeReader.decodeFromVideoDevice(
+                undefined,
+                video,
+                (result, error) => {
+
+                    if (!scanning) return;
+
+                    if (result) {
+
+                        const scannedValue = result.getText();
+
+                        try {
+
+                            const scannedUrl = new URL(scannedValue);
+
+                            if (
+                                scannedUrl.origin === window.location.origin &&
+                                scannedUrl.pathname.startsWith("/verify/")
+                            ) {
+
+                                verificationInput.value = scannedValue;
+
+                                stopScanner();
+
+                                updateStatus(
+                                    "QR code detected. Verifying certificate...",
+                                    "success"
+                                );
+
+                                verificationForm.submit();
+
+                            } else {
+
+                                updateStatus(
+                                    "This is not a valid UniClear verification QR code.",
+                                    "warning"
+                                );
+
+                            }
+
+                        } catch (error) {
+
+                            updateStatus(
+                                "The scanned QR code does not contain a valid URL.",
+                                "danger"
+                            );
+
+                        }
+                    }
+                }
+            );
+
+            updateStatus(
+                "Camera active. Hold the student's QR code in front of the camera.",
+                "success"
+            );
+
+        } catch (error) {
+
+            stopScanner();
+
+            updateStatus(
+                "Unable to access the camera. Check browser camera permissions.",
+                "danger"
+            );
+
+            console.error(error);
+        }
+    });
+
+    stopButton.addEventListener("click", function () {
+
+        stopScanner();
+
+        updateStatus("QR scanner stopped.");
+
+    });
+
+    window.addEventListener("beforeunload", stopScanner);
+
+});
+</script>
 
 {% endblock %}

@@ -23,6 +23,8 @@ from flask_login import login_required, current_user
 
 from .extensions import db
 
+from urllib.parse import urlsplit
+
 from .models import (
     ClearanceRequest,
     ClearanceItem,
@@ -56,9 +58,9 @@ def index():
 @login_required
 def dashboard():
 
-    # ------------------------------------------------------
+    # ======================================================
     # STUDENT DASHBOARD
-    # ------------------------------------------------------
+    # ======================================================
 
     if current_user.role == "student":
 
@@ -74,13 +76,12 @@ def dashboard():
             requests=student_requests
         )
 
-    # ------------------------------------------------------
+    # ======================================================
     # OFFICER DASHBOARD
-    # ------------------------------------------------------
+    # ======================================================
 
     if current_user.role == "officer":
 
-        # Check department assignment.
         if not current_user.department_id:
 
             flash(
@@ -94,7 +95,6 @@ def dashboard():
                 clearance_items=[]
             )
 
-        # Retrieve pending clearance items for this department.
         clearance_items = (
             ClearanceItem.query
             .join(ClearanceRequest)
@@ -114,11 +114,53 @@ def dashboard():
             clearance_items=clearance_items
         )
 
-       # ------------------------------------------------------
-    # ADMIN DASHBOARD
-    # ------------------------------------------------------
+    # ======================================================
+    # ADMINISTRATOR DASHBOARD
+    # ======================================================
 
     if current_user.role == "admin":
+
+        # --------------------------------------------------
+        # USER STATISTICS
+        # --------------------------------------------------
+
+        total_students = User.query.filter_by(
+            role="student"
+        ).count()
+
+        total_officers = User.query.filter_by(
+            role="officer"
+        ).count()
+
+        total_verifiers = User.query.filter_by(
+            role="verifier"
+        ).count()
+
+        total_departments = Department.query.count()
+
+        # --------------------------------------------------
+        # CLEARANCE STATISTICS
+        # --------------------------------------------------
+
+        total_requests = ClearanceRequest.query.count()
+
+        approved_requests = ClearanceRequest.query.filter_by(
+            status="approved"
+        ).count()
+
+        pending_requests = ClearanceRequest.query.filter(
+            ClearanceRequest.status.in_(
+                ["pending", "in_progress"]
+            )
+        ).count()
+
+        rejected_requests = ClearanceRequest.query.filter_by(
+            status="rejected"
+        ).count()
+
+        # --------------------------------------------------
+        # REGISTERED OFFICERS
+        # --------------------------------------------------
 
         registered_officers = (
             User.query
@@ -127,18 +169,109 @@ def dashboard():
             .all()
         )
 
-        return render_template(
-            "dashboards/admin.html",
-            students=User.query.filter_by(role="student").count(),
-            officers=User.query.filter_by(role="officer").count(),
-            departments=Department.query.count(),
-            requests=ClearanceRequest.query.count(),
-            registered_officers=registered_officers
+        # --------------------------------------------------
+        # REGISTERED VERIFIERS
+        # --------------------------------------------------
+
+        registered_verifiers = (
+            User.query
+            .filter_by(role="verifier")
+            .order_by(User.full_name.asc())
+            .all()
         )
 
-    # ------------------------------------------------------
+        # --------------------------------------------------
+        # RECENT CLEARANCE REQUESTS
+        # --------------------------------------------------
+
+        recent_requests = (
+            ClearanceRequest.query
+            .order_by(
+                ClearanceRequest.submitted_at.desc()
+            )
+            .limit(6)
+            .all()
+        )
+
+        # --------------------------------------------------
+        # CLEARANCE STATUS DISTRIBUTION
+        # --------------------------------------------------
+
+        clearance_status_data = [
+            approved_requests,
+            pending_requests,
+            rejected_requests
+        ]
+
+        # --------------------------------------------------
+        # DEPARTMENT CLEARANCE PROGRESS
+        # --------------------------------------------------
+
+        departments = (
+            Department.query
+            .order_by(Department.name.asc())
+            .all()
+        )
+
+        department_progress = []
+
+        for department in departments:
+
+            total_items = ClearanceItem.query.filter_by(
+                department_id=department.id
+            ).count()
+
+            approved_items = ClearanceItem.query.filter_by(
+                department_id=department.id,
+                status="approved"
+            ).count()
+
+            progress = (
+                round((approved_items / total_items) * 100)
+                if total_items > 0
+                else 0
+            )
+
+            department_progress.append({
+                "name": department.name,
+                "total": total_items,
+                "approved": approved_items,
+                "progress": progress
+            })
+
+        # --------------------------------------------------
+        # RENDER ADMINISTRATOR DASHBOARD
+        # --------------------------------------------------
+
+        return render_template(
+            "dashboards/admin.html",
+
+            # Statistics
+            students=total_students,
+            officers=total_officers,
+            departments=total_departments,
+            requests=total_requests,
+
+            approved_requests=approved_requests,
+            pending_requests=pending_requests,
+            rejected_requests=rejected_requests,
+            verifiers=total_verifiers,
+
+            # Registered users
+            registered_officers=registered_officers,
+            registered_verifiers=registered_verifiers,
+
+            # Analytics
+            clearance_status_data=clearance_status_data,
+            department_progress=department_progress,
+
+            # Recent activities
+            recent_requests=recent_requests
+        )
+
+    # ======================================================
     # VERIFIER DASHBOARD
-    # ------------------------------------------------------
+    # ======================================================
 
     if current_user.role == "verifier":
 
@@ -147,7 +280,6 @@ def dashboard():
         )
 
     abort(403)
-
 
 # ==========================================================
 # STUDENT CLEARANCE APPLICATION
@@ -327,9 +459,7 @@ def review_clearance(item_id):
         abort(403)
 
     # Retrieve the clearance item.
-    clearance_item = ClearanceItem.query.get_or_404(
-        item_id
-    )
+    clearance_item = ClearanceItem.query.get_or_404(item_id)
 
     # Restrict officers to their assigned department.
     if clearance_item.department_id != current_user.department_id:
@@ -378,16 +508,17 @@ def review_clearance(item_id):
 
     try:
 
-        # Update departmental clearance record.
+        # --------------------------------------------------
+        # UPDATE DEPARTMENTAL CLEARANCE ITEM
+        # --------------------------------------------------
+
         clearance_item.status = decision
 
         clearance_item.remarks = remarks
 
         clearance_item.reviewed_by = current_user.id
 
-        clearance_item.reviewed_at = datetime.now(
-            timezone.utc
-        )
+        clearance_item.reviewed_at = datetime.now(timezone.utc)
 
         db.session.flush()
 
@@ -401,23 +532,48 @@ def review_clearance(item_id):
         # AUTOMATIC OVERALL STATUS UPDATE
         # --------------------------------------------------
 
-        if any(
-            item.status == "rejected"
-            for item in all_items
-        ):
+        pending_items = [
+            item for item in all_items
+            if item.status == "pending"
+        ]
 
-            clearance_request.status = "rejected"
+        rejected_items = [
+            item for item in all_items
+            if item.status == "rejected"
+        ]
 
-        elif all(
-            item.status == "approved"
-            for item in all_items
+        # Case 1: Some departments have not completed
+        # their reviews.
+        if pending_items:
+
+            # No department has reviewed the application yet.
+            if len(pending_items) == len(all_items):
+
+                clearance_request.status = "pending"
+
+            else:
+
+                # Other departments must continue reviewing.
+                clearance_request.status = "in_progress"
+
+        # Case 2: Every department has approved clearance.
+        elif (
+            all_items
+            and all(item.status == "approved" for item in all_items)
         ):
 
             clearance_request.status = "approved"
 
+        # Case 3: All departments have completed their reviews,
+        # but at least one department rejected clearance.
+        elif rejected_items:
+
+            clearance_request.status = "rejected"
+
+        # Defensive fallback.
         else:
 
-            clearance_request.status = "in_progress"
+            clearance_request.status = "pending"
 
         # --------------------------------------------------
         # AUDIT LOGGING
@@ -455,9 +611,8 @@ def review_clearance(item_id):
             "danger"
         )
 
-    return redirect(
-        url_for("main.dashboard")
-    )
+    return redirect(url_for("main.dashboard"))
+
 
 # ==========================================================
 # ADMIN: REGISTER DEPARTMENT OFFICER
@@ -803,6 +958,59 @@ def edit_officer(officer_id):
         "admin/edit_officer.html",
         officer=officer,
         departments=departments
+    )
+
+@main_bp.route("/admin/officers")
+@login_required
+def manage_officers():
+
+    if current_user.role != "admin":
+        abort(403)
+
+    search = request.args.get("search", "").strip()
+
+    officers_query = User.query.filter_by(role="officer")
+
+    # Search by officer name, email or department
+    if search:
+        officers_query = officers_query.filter(
+            db.or_(
+                User.full_name.ilike(f"%{search}%"),
+                User.email.ilike(f"%{search}%"),
+                User.department.has(
+                    Department.name.ilike(f"%{search}%")
+                )
+            )
+        )
+
+    officers = (
+        officers_query
+        .order_by(User.full_name.asc())
+        .all()
+    )
+
+    # Officer statistics
+    total_officers = User.query.filter_by(
+        role="officer"
+    ).count()
+
+    active_officers = User.query.filter_by(
+        role="officer",
+        is_active=True
+    ).count()
+
+    inactive_officers = User.query.filter_by(
+        role="officer",
+        is_active=False
+    ).count()
+
+    return render_template(
+        "admin/officers.html",
+        officers=officers,
+        search=search,
+        total_officers=total_officers,
+        active_officers=active_officers,
+        inactive_officers=inactive_officers
     )
 
 # ==========================================================
@@ -1179,3 +1387,314 @@ def verify_certificate(token):
             valid=False,
             clearance_request=None
         )
+
+# Verify a student's QR-code certificate using its signed token.
+@main_bp.route("/verify-certificate", methods=["POST"])
+@login_required
+def submit_verification_link():
+
+    if current_user.role != "verifier":
+        abort(403)
+
+    verification_url = request.form.get(
+        "verification_url", ""
+    ).strip()
+
+    if not verification_url:
+        flash("Please enter a verification URL.", "warning")
+        return redirect(url_for("main.dashboard"))
+
+    parsed_url = urlsplit(verification_url)
+
+    path_parts = parsed_url.path.strip("/").split("/")
+
+    if len(path_parts) != 2 or path_parts[0] != "verify":
+        flash("Invalid certificate verification URL.", "danger")
+        return redirect(url_for("main.dashboard"))
+
+    token = path_parts[1]
+
+    return redirect(
+        url_for("main.verify_certificate", token=token)
+    )
+
+# ==========================================================
+# ADMIN: REGISTER CERTIFICATE VERIFIER
+# ==========================================================
+
+@main_bp.route("/admin/verifiers/add", methods=["GET", "POST"])
+@login_required
+def add_verifier():
+
+    # Only administrators can create verifier accounts.
+    if current_user.role != "admin":
+        abort(403)
+
+    if request.method == "POST":
+
+        full_name = request.form.get(
+            "full_name", ""
+        ).strip()
+
+        email = request.form.get(
+            "email", ""
+        ).strip().lower()
+
+        password = request.form.get(
+            "password", ""
+        )
+
+        # Validate required fields.
+        if not all([full_name, email, password]):
+
+            flash(
+                "Please complete all fields.",
+                "danger"
+            )
+
+            return redirect(url_for("main.add_verifier"))
+
+        if len(password) < 8:
+
+            flash(
+                "Password must contain at least 8 characters.",
+                "danger"
+            )
+
+            return redirect(url_for("main.add_verifier"))
+
+        # Check whether the email already exists.
+        if User.query.filter_by(email=email).first():
+
+            flash(
+                "An account with that email already exists.",
+                "danger"
+            )
+
+            return redirect(url_for("main.add_verifier"))
+
+        try:
+
+            # Create verifier account.
+            verifier = User(
+                full_name=full_name,
+                email=email,
+                password_hash=generate_password_hash(password),
+                role="verifier"
+            )
+
+            db.session.add(verifier)
+            db.session.flush()
+
+            # Record the action.
+            audit = AuditLog(
+                user_id=current_user.id,
+                action="Created certificate verifier",
+                entity_type="User",
+                entity_id=verifier.id,
+                details=f"Created verifier account for {full_name}."
+            )
+
+            db.session.add(audit)
+            db.session.commit()
+
+            flash(
+                f"Verifier account for {full_name} created successfully.",
+                "success"
+            )
+
+            return redirect(url_for("main.dashboard"))
+
+        except Exception:
+
+            db.session.rollback()
+
+            flash(
+                "An error occurred while creating the verifier account.",
+                "danger"
+            )
+
+    return render_template("admin/add_verifier.html")
+
+# ==========================================================
+# ADMIN: STUDENT MANAGEMENT
+# ==========================================================
+
+@main_bp.route("/admin/students")
+@login_required
+def manage_students():
+
+    print("\n========== STUDENT MANAGEMENT DEBUG ==========")
+    print("User ID:", current_user.id)
+    print("User Name:", current_user.full_name)
+    print("User Role:", repr(current_user.role))
+    print("Authenticated:", current_user.is_authenticated)
+    print("==============================================\n")
+
+    # Only administrators can manage student accounts.
+    if current_user.role != "admin":
+        abort(403)
+
+    # Get the search term.
+    search = request.args.get("search", "").strip()
+
+    # Retrieve student accounts.
+    students_query = User.query.filter_by(role="student")
+
+    # Apply search filter.
+    if search:
+        students_query = students_query.filter(
+            db.or_(
+                User.full_name.ilike(f"%{search}%"),
+                User.registration_number.ilike(f"%{search}%"),
+                User.email.ilike(f"%{search}%")
+            )
+        )
+
+    # Order students alphabetically.
+    students = (
+        students_query
+        .order_by(User.full_name.asc())
+        .all()
+    )
+
+    # Calculate student statistics.
+    total_students = User.query.filter_by(
+        role="student"
+    ).count()
+
+    active_students = User.query.filter_by(
+        role="student",
+        is_active=True
+    ).count()
+
+    inactive_students = User.query.filter_by(
+        role="student",
+        is_active=False
+    ).count()
+
+    return render_template(
+        "admin/students.html",
+        students=students,
+        search=search,
+        total_students=total_students,
+        active_students=active_students,
+        inactive_students=inactive_students
+    )
+
+
+# ==========================================================
+# ADMIN: ACTIVATE / DEACTIVATE STUDENT ACCOUNTS
+# ==========================================================
+
+@main_bp.route(
+    "/admin/students/<int:student_id>/toggle-status",
+    methods=["POST"]
+)
+@login_required
+def toggle_student_status(student_id):
+
+    # Only administrators can manage student accounts.
+    if current_user.role != "admin":
+        abort(403)
+
+    # Retrieve the student.
+    student = User.query.filter_by(
+        id=student_id,
+        role="student"
+    ).first_or_404()
+
+    try:
+
+        # Change student account status.
+        student.is_active = not student.is_active
+
+        status = (
+            "activated"
+            if student.is_active
+            else "deactivated"
+        )
+
+        # Record the action.
+        audit = AuditLog(
+            user_id=current_user.id,
+            action=f"Student account {status}",
+            entity_type="User",
+            entity_id=student.id,
+            details=(
+                f"Administrator {current_user.full_name} "
+                f"{status} the student account belonging to "
+                f"{student.full_name} "
+                f"({student.registration_number or 'No registration number'})."
+            )
+        )
+
+        db.session.add(audit)
+        db.session.commit()
+
+        flash(
+            f"Student account for {student.full_name} "
+            f"successfully {status}.",
+            "success"
+        )
+
+    except Exception:
+
+        db.session.rollback()
+
+        flash(
+            "An error occurred while updating the student account.",
+            "danger"
+        )
+
+    return redirect(url_for("main.manage_students"))
+
+@main_bp.route("/admin/verifiers")
+@login_required
+def manage_verifiers():
+
+    if current_user.role != "admin":
+        abort(403)
+
+    search = request.args.get("search", "").strip()
+
+    verifiers_query = User.query.filter_by(role="verifier")
+
+    # Search by verifier name or email
+    if search:
+        verifiers_query = verifiers_query.filter(
+            db.or_(
+                User.full_name.ilike(f"%{search}%"),
+                User.email.ilike(f"%{search}%")
+            )
+        )
+
+    verifiers = (
+        verifiers_query
+        .order_by(User.full_name.asc())
+        .all()
+    )
+
+    # Verifier statistics
+    total_verifiers = User.query.filter_by(
+        role="verifier"
+    ).count()
+
+    active_verifiers = User.query.filter_by(
+        role="verifier",
+        is_active=True
+    ).count()
+
+    inactive_verifiers = User.query.filter_by(
+        role="verifier",
+        is_active=False
+    ).count()
+
+    return render_template(
+        "admin/verifiers.html",
+        verifiers=verifiers,
+        search=search,
+        total_verifiers=total_verifiers,
+        active_verifiers=active_verifiers,
+        inactive_verifiers=inactive_verifiers
+    )
