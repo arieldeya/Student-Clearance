@@ -1,10 +1,13 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
 from flask_login import UserMixin
 from werkzeug.security import check_password_hash
+
 from .extensions import db, login_manager
 
+
 def utc_now():
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 class Department(db.Model):
     __tablename__ = "departments"

@@ -1,7 +1,10 @@
 from pathlib import Path
-from flask import Flask
+
 from config import Config
+from flask import Flask
+
 from .extensions import db, login_manager
+
 
 def create_app():
     app = Flask(__name__)
@@ -12,9 +15,9 @@ def create_app():
     login_manager.login_view = "auth.login"
     login_manager.login_message_category = "warning"
 
-    from .models import User, Department
     from .auth import auth_bp
     from .main import main_bp
+    from .models import Department, User
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
 
@@ -31,6 +34,7 @@ def create_app():
     @app.cli.command("create-admin")
     def create_admin():
         import getpass
+
         from werkzeug.security import generate_password_hash
         db.create_all()
         email = input("Admin email: ").strip().lower()

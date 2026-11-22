@@ -1,38 +1,27 @@
 
-from datetime import datetime, timezone
-from werkzeug.security import generate_password_hash
-
-from flask import (
-    Blueprint,
-    render_template,
-    abort,
-    redirect,
-    url_for,
-    flash,
-    request,
-    send_file,
-    current_app
-)
-
+from datetime import UTC, datetime
 from io import BytesIO
-import qrcode
-
-from itsdangerous import URLSafeTimedSerializer, BadSignature
-
-from flask_login import login_required, current_user
-
-from .extensions import db
-
 from urllib.parse import urlsplit
 
-from .models import (
-    ClearanceRequest,
-    ClearanceItem,
-    User,
-    Department,
-    AuditLog
+import qrcode
+from flask import (
+    Blueprint,
+    abort,
+    current_app,
+    flash,
+    redirect,
+    render_template,
+    request,
+    send_file,
+    url_for,
 )
+from flask_login import current_user, login_required
+from itsdangerous import BadSignature, URLSafeTimedSerializer
+from sqlalchemy.exc import SQLAlchemyError
+from werkzeug.security import generate_password_hash
 
+from .extensions import db
+from .models import AuditLog, ClearanceItem, ClearanceRequest, Department, User
 
 main_bp = Blueprint("main", __name__)
 
@@ -374,7 +363,7 @@ def apply_clearance():
 
             return redirect(url_for("main.dashboard"))
 
-        except Exception:
+        except SQLAlchemyError:
 
             db.session.rollback()
 
@@ -518,7 +507,7 @@ def review_clearance(item_id):
 
         clearance_item.reviewed_by = current_user.id
 
-        clearance_item.reviewed_at = datetime.now(timezone.utc)
+        clearance_item.reviewed_at = datetime.now(UTC)
 
         db.session.flush()
 
@@ -602,7 +591,7 @@ def review_clearance(item_id):
             "success"
         )
 
-    except Exception:
+    except SQLAlchemyError:
 
         db.session.rollback()
 
@@ -729,7 +718,7 @@ def add_officer():
 
             return redirect(url_for("main.dashboard"))
 
-        except Exception:
+        except SQLAlchemyError:
 
             db.session.rollback()
 
@@ -792,7 +781,7 @@ def toggle_officer_status(officer_id):
             "success"
         )
 
-    except Exception:
+    except SQLAlchemyError:
 
         db.session.rollback()
 
@@ -945,7 +934,7 @@ def edit_officer(officer_id):
 
             return redirect(url_for("main.dashboard"))
 
-        except Exception:
+        except SQLAlchemyError:
 
             db.session.rollback()
 
@@ -1112,7 +1101,7 @@ def add_department():
 
             return redirect(url_for("main.manage_departments"))
 
-        except Exception:
+        except SQLAlchemyError:
 
             db.session.rollback()
 
@@ -1195,7 +1184,7 @@ def edit_department(department_id):
 
             return redirect(url_for("main.manage_departments"))
 
-        except Exception:
+        except SQLAlchemyError:
 
             db.session.rollback()
 
@@ -1245,7 +1234,7 @@ def toggle_department_status(department_id):
             "success"
         )
 
-    except Exception:
+    except SQLAlchemyError:
 
         db.session.rollback()
 
@@ -1505,7 +1494,7 @@ def add_verifier():
 
             return redirect(url_for("main.dashboard"))
 
-        except Exception:
+        except SQLAlchemyError:
 
             db.session.rollback()
 
@@ -1638,7 +1627,7 @@ def toggle_student_status(student_id):
             "success"
         )
 
-    except Exception:
+    except SQLAlchemyError:
 
         db.session.rollback()
 
